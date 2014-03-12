@@ -1,0 +1,11 @@
+<phpunit bootstrap="framework/tests/bootstrap.php" colors="true">
+
+	<php>
+		<var name="flush" value="all"/>
+	</php>
+
+	<testsuite name="Default">
+		<directory>{{MODULE_DIR}}/tests</directory>
+	</testsuite>
+
+</phpunit>
