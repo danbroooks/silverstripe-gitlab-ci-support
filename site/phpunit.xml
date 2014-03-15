@@ -1,7 +1,7 @@
 <phpunit bootstrap="framework/tests/bootstrap.php" colors="true">
 
 	<php>
-		<var name="flush" value="all"/>
+		<get name="flush" value="1"/>
 	</php>
 
 	<testsuite name="Default">
