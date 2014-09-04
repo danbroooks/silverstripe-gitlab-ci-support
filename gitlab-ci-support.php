@@ -10,6 +10,7 @@ class SilverStripeGitlabCiSupport {
 	private $moduleTarget;
 	private $supportDir;
 	private $supportDirName;
+	private $project = 'site';
 
 	public function __construct($moduleTarget, $supportDir) {
 		$this->moduleTarget = $moduleTarget;
@@ -34,23 +35,23 @@ class SilverStripeGitlabCiSupport {
 		}
 	}
 
+	private function isModuleItem($file) {
+		$ignore = array('.', '..', $this->supportDirName, $this->moduleTarget);
+		return !in_array($file, $ignore);
+	}
+
 	private function MoveComposerJSON(){
-		rename($this->moduleTarget.'/composer.json', './composer.json');
+		rename($this->project.'/composer.json', './composer.json');
 	}
 
 	private function CreateConfiguration(){
-		$project = 'site';
+		$project = $this->project;
 		rename($this->supportDirName . "/" . $project, $project);
 		$xml = file_get_contents($project.'/phpunit.xml');
 		$xml = str_replace('{{MODULE_DIR}}', $this->moduleTarget, $xml);
 		file_put_contents('phpunit.xml', $xml);
 		unlink($project . '/phpunit.xml');
 		$this->run_cmd('rm ' . $this->supportDirName . ' -fr');
-	}
-
-	private function isModuleItem($file) {
-		$ignore = array('.', '..', $this->supportDirName, $this->moduleTarget);
-		return !in_array($file, $ignore);
 	}
 
 	private function run_cmd($cmd) {
