@@ -5,6 +5,14 @@ if (php_sapi_name() != 'cli') {
 	exit;
 }
 
+function load_json($file) {
+	return json_decode(file_get_contents($file));
+}
+
+function save_json($file, $obj) {
+	file_put_contents($file, json_encode($obj));
+}
+
 class SilverStripeGitlabCiSupport {
 
 	private $moduleFolder;
@@ -16,6 +24,12 @@ class SilverStripeGitlabCiSupport {
 	public function __construct($moduleFolder, $supportDir) {
 		$this->moduleFolder = $moduleFolder;
 		$this->supportFolder = basename($supportDir);
+
+		$parent = basename(dirname($supportDir));
+		if ( basename(getcwd()) != $parent ) {
+			throw new Exception("Must run script from parent directory \"$parent\".");
+		}
+
 		$this->ignoreFiles = array('.', '..', '.git', $this->moduleFolder, $this->supportFolder, $this->project);
 	}
 
@@ -26,6 +40,17 @@ class SilverStripeGitlabCiSupport {
 		$this->moveToRoot('phpunit.xml');
 		$this->replaceInFile('{{MODULE_DIR}}', $this->moduleFolder, './phpunit.xml');
 		$this->run_cmd('rm ' . $this->supportFolder . ' -fr');
+		$this->addDepenanciesToComposer();
+	}
+
+	private function moduleRequires() {
+		return load_json('./module-under-test/composer.json')->require;
+	}
+
+	private function addDepenanciesToComposer() {
+		$composer = load_json('./composer.json');
+		$composer->require += $this->moduleRequires();
+		save_json('./composer.json', $composer);
 	}
 
 	private function moveProjectIntoRoot() {
