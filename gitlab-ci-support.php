@@ -6,7 +6,7 @@ if (php_sapi_name() != 'cli') {
 }
 
 function load_json($file) {
-	return json_decode(file_get_contents($file));
+	return json_decode(file_get_contents($file), true);
 }
 
 function save_json($file, $obj) {
@@ -43,13 +43,15 @@ class SilverStripeGitlabCiSupport {
 		$this->addDepenanciesToComposer();
 	}
 
-	private function moduleRequires() {
-		return load_json('./module-under-test/composer.json')->require;
+	private function getRequires($file) {
+		$composer = load_json($file);
+		return array_key_exists('require', $composer) ? $composer['require'] : array();
 	}
 
 	private function addDepenanciesToComposer() {
 		$composer = load_json('./composer.json');
-		$composer->require += $this->moduleRequires();
+		$composer['require'] = $this->getRequires('./composer.json');
+		$composer['require'] += $this->getRequires('./module-under-test/composer.json');
 		save_json('./composer.json', $composer);
 	}
 
