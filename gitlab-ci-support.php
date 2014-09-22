@@ -13,6 +13,32 @@ function save_json($file, $obj) {
 	file_put_contents($file, json_encode($obj));
 }
 
+class ComposerJSON {
+
+	private $filename;
+	private $config;
+
+	public function __construct($file) {
+		$this->filename = $file;
+		$this->config = load_json($file);
+	}
+
+	public function save($path = NULL) {
+		save_json($path?:$this->filename, $this->config);
+	}
+
+	public function getValue($key) {
+		return array_key_exists($key, $this->config) ? $this->config[$key] : NULL;
+	}
+
+	public function mergeInto($key, $value) {
+		$mergedValue = $this->getValue($key) ?: array();
+		if ($value) $mergedValue += $value;
+		$this->config[$key] = $mergedValue;
+	}
+
+}
+
 class SilverStripeGitlabCiSupport {
 
 	private $moduleFolder;
@@ -43,16 +69,12 @@ class SilverStripeGitlabCiSupport {
 		$this->addDepenanciesToComposer();
 	}
 
-	private function getRequires($file) {
-		$composer = load_json($file);
-		return array_key_exists('require', $composer) ? $composer['require'] : array();
-	}
-
 	private function addDepenanciesToComposer() {
-		$composer = load_json('./composer.json');
-		$composer['require'] = $this->getRequires('./composer.json');
-		$composer['require'] += $this->getRequires('./module-under-test/composer.json');
-		save_json('./composer.json', $composer);
+		$testProjectJson = new ComposerJSON('./composer.json');
+		$moduleJson = new ComposerJSON('./module-under-test/composer.json');
+		$testProjectJson->mergeInto('repositories', $moduleJson->getValue('repositories'));
+		$testProjectJson->mergeInto('require', $moduleJson->getValue('require'));
+		$testProjectJson->save();
 	}
 
 	private function moveProjectIntoRoot() {
